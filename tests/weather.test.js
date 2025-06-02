@@ -14,7 +14,7 @@ describe('Weather API Service', () => {
   });
 
 
-  test('should get weather by city name', async () => {
+  test('should get weather by city name with language support', async () => {
 
 
     // Mock API response
@@ -32,7 +32,7 @@ describe('Weather API Service', () => {
       .reply(200, mockResponse);
 
 
-    const result = await getWeatherByCity('Berlin');
+    const result = await getWeatherByCity('Berlin', 'en');
 
 
     expect(result.city).toBe('Berlin');
@@ -40,12 +40,13 @@ describe('Weather API Service', () => {
     expect(result.temperature).toBe(16); // rounded
     expect(result.description).toBe('clear sky');
     expect(result.emoji).toBe('☀️');
+    expect(result.formatted).toContain('Berlin, DE');
 
 
   });
 
 
-  test('should get weather by coordinates', async () => {
+  test('should get weather by coordinates with language support', async () => {
 
 
     const mockResponse = {
@@ -62,12 +63,13 @@ describe('Weather API Service', () => {
       .reply(200, mockResponse);
 
 
-    const result = await getWeatherByCoords(51.5074, -0.1278);
+    const result = await getWeatherByCoords(51.5074, -0.1278, 'en');
 
 
     expect(result.city).toBe('London');
     expect(result.temperature).toBe(12);
     expect(result.emoji).toBe('☁️');
+    expect(result.formatted).toContain('London, GB');
 
 
   });
@@ -82,9 +84,38 @@ describe('Weather API Service', () => {
       .reply(404, { message: 'city not found' });
 
 
-    await expect(getWeatherByCity('NonExistentCity'))
+    await expect(getWeatherByCity('NonExistentCity', 'en'))
       .rejects
       .toThrow('City not found. Please check the spelling.');
+
+
+  });
+
+
+  test('should use default language when not specified', async () => {
+
+
+    const mockResponse = {
+      name: 'Paris',
+      sys: { country: 'FR' },
+      main: { temp: 18.7 },
+      weather: [{ main: 'Rain', description: 'light rain' }]
+    };
+
+
+    nock('https://api.openweathermap.org')
+      .get('/data/2.5/weather')
+      .query(true)
+      .reply(200, mockResponse);
+
+
+    // Test without language parameter (should default to 'en')
+    const result = await getWeatherByCity('Paris');
+
+
+    expect(result.city).toBe('Paris');
+    expect(result.temperature).toBe(19);
+    expect(result.emoji).toBe('🌧️');
 
 
   });

@@ -4,39 +4,41 @@ const logger = require('./utils/logger');
 
 
 // Check environment variables
-logger.debug('Checking environment variables');
-logger.debug('BOT_TOKEN loaded', { hasToken: !!process.env.BOT_TOKEN });
-logger.debug('WEATHER_API_KEY loaded', { hasKey: !!process.env.WEATHER_API_KEY });
-
 if (!process.env.BOT_TOKEN) {
   logger.error('BOT_TOKEN not found in environment variables');
+  process.exit(1);
+}
+
+if (!process.env.WEATHER_API_KEY) {
+  logger.error('WEATHER_API_KEY not found in environment variables'); 
   process.exit(1);
 }
 
 
 const startHandler = require('./handlers/start');
 const locationHandler = require('./handlers/location');
+const { showLanguageMenu, handleLanguageSelection } = require('./handlers/language');
+const { getMessage } = require('./utils/messages');
 
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 
-// Start command
+// Commands
 bot.start(startHandler);
+bot.command('lang', showLanguageMenu);
 
 
 // Help command
-bot.help((ctx) => {
-  ctx.reply(`
-🤖 Available commands:
-/start - Start conversation
-/help - Show this help message
-
-📍 You can send me:
-• Your location (GPS)
-• City name (e.g., "Berlin, Germany")
-  `);
+bot.help(async (ctx) => {
+  const userId = ctx.from.id;
+  const helpText = await getMessage(userId, 'help');
+  ctx.reply(helpText);
 });
+
+
+// Callback queries (for inline buttons)
+bot.on('callback_query', handleLanguageSelection);
 
 
 // Location handlers
@@ -45,19 +47,27 @@ bot.on('text', locationHandler);
 
 
 // Handle unknown commands
-bot.on('message', (ctx) => {
+bot.on('message', async (ctx) => {
 
 
-  ctx.reply('Sorry, I don\'t understand that. Use /help to see available commands.');
+  const userId = ctx.from.id;
+  const unknownText = await getMessage(userId, 'unknownMessage');
+  ctx.reply(unknownText);
 
 
 });
 
 
 // Error handling
-bot.catch((err, ctx) => {
+bot.catch(async (err, ctx) => {
   logger.error(`Bot error for ${ctx.updateType}`, err);
-  ctx.reply('Sorry, something went wrong. Please try again.');
+  const userId = ctx.from?.id;
+  if (userId) {
+    const errorText = await getMessage(userId, 'error');
+    ctx.reply(errorText);
+  } else {
+    ctx.reply('Sorry, something went wrong. Please try again.');
+  }
 });
 
 

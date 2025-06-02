@@ -1,9 +1,13 @@
 const { getWeatherByCoords, getWeatherByCity } = require('../services/weatherApi');
 const { Markup } = require('telegraf');
 const logger = require('../utils/logger');
+const { getMessage, getUserLanguage } = require('../utils/messages');
 
 
 module.exports = async (ctx) => {
+
+
+  const userId = ctx.from.id;
 
 
   // Show typing indicator
@@ -14,6 +18,10 @@ module.exports = async (ctx) => {
 
 
     let weatherData;
+    
+
+    // Get user's language
+    const userLanguage = await getUserLanguage(userId);
 
 
     // Check if it's GPS location
@@ -24,7 +32,7 @@ module.exports = async (ctx) => {
       logger.info('Processing GPS location request', { latitude, longitude });
       
 
-      weatherData = await getWeatherByCoords(latitude, longitude);
+      weatherData = await getWeatherByCoords(latitude, longitude, userLanguage);
 
 
     } else if (ctx.message.text) {
@@ -42,13 +50,14 @@ module.exports = async (ctx) => {
       logger.info('Processing city weather request', { cityName });
       
 
-      weatherData = await getWeatherByCity(cityName);
+      weatherData = await getWeatherByCity(cityName, userLanguage);
 
 
     } else {
       
 
-      await ctx.reply('Please send your location or type a city name.');
+      const sendLocationText = await getMessage(userId, 'sendLocation');
+      await ctx.reply(sendLocationText);
       return;
 
 
@@ -66,12 +75,16 @@ module.exports = async (ctx) => {
     setTimeout(async () => {
       
 
+      const anotherLocationText = await getMessage(userId, 'anotherLocation');
+      const locationButtonText = await getMessage(userId, 'locationButtonAgain');
+      
+
       const keyboard = Markup.keyboard([
-        Markup.button.locationRequest('📍 Send location again')
+        Markup.button.locationRequest(locationButtonText)
       ]).resize();
       
 
-      await ctx.reply('Want to check weather for another location?', keyboard);
+      await ctx.reply(anotherLocationText, keyboard);
 
 
     }, 2000);
@@ -87,8 +100,11 @@ module.exports = async (ctx) => {
     });
     
 
+    const tryAgainText = await getMessage(userId, 'tryAgain');
+    
+
     await ctx.reply(
-      `Sorry, ${error.message}\n\nPlease try again with a different location.`,
+      `${tryAgainText}\n\n${error.message}`,
       Markup.removeKeyboard()
     );
 

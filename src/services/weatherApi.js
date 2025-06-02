@@ -9,7 +9,7 @@ const API_KEY = process.env.WEATHER_API_KEY;
 /**
  * Get weather by coordinates
  */
-async function getWeatherByCoords(lat, lon) {
+async function getWeatherByCoords(lat, lon, language = 'en') {
 
 
   try {
@@ -20,12 +20,13 @@ async function getWeatherByCoords(lat, lon) {
         lat,
         lon,
         appid: API_KEY,
-        units: 'metric' // Celsius
+        units: 'metric', // Celsius
+        lang: getOpenWeatherLang(language) // OpenWeatherMap language
       }
     });
 
 
-    return formatWeatherData(response.data);
+    return formatWeatherData(response.data, language);
 
 
   } catch (error) {
@@ -44,7 +45,7 @@ async function getWeatherByCoords(lat, lon) {
 /**
  * Get weather by city name
  */
-async function getWeatherByCity(cityName) {
+async function getWeatherByCity(cityName, language = 'en') {
 
 
   try {
@@ -54,12 +55,13 @@ async function getWeatherByCity(cityName) {
       params: {
         q: cityName,
         appid: API_KEY,
-        units: 'metric'
+        units: 'metric',
+        lang: getOpenWeatherLang(language) // OpenWeatherMap language
       }
     });
 
 
-    return formatWeatherData(response.data);
+    return formatWeatherData(response.data, language);
 
 
   } catch (error) {
@@ -87,7 +89,7 @@ async function getWeatherByCity(cityName) {
 /**
  * Format weather data for user-friendly display
  */
-function formatWeatherData(data) {
+function formatWeatherData(data, language = 'en') {
 
 
   const temp = Math.round(data.main.temp);
@@ -100,13 +102,25 @@ function formatWeatherData(data) {
   const weatherEmoji = getWeatherEmoji(data.weather[0].main);
 
 
+  // Translate location prefix based on language
+  const locationPrefixes = {
+    en: '📍',
+    ru: '📍',
+    uk: '📍', 
+    pl: '📍'
+  };
+
+
+  const locationPrefix = locationPrefixes[language] || '📍';
+
+
   return {
     temperature: temp,
     description: description,
     city: cityName,
     country: country,
     emoji: weatherEmoji,
-    formatted: `${weatherEmoji} ${temp}°C, ${description}\n📍 ${cityName}, ${country}`
+    formatted: `${weatherEmoji} ${temp}°C, ${description}\n${locationPrefix} ${cityName}, ${country}`
   };
 
 
@@ -133,6 +147,26 @@ function getWeatherEmoji(weatherMain) {
 
 
   return emojiMap[weatherMain] || '🌤️';
+
+
+}
+
+
+/**
+ * Map our language codes to OpenWeatherMap language codes
+ */
+function getOpenWeatherLang(language) {
+
+
+  const langMap = {
+    'en': 'en',
+    'ru': 'ru', 
+    'uk': 'uk',
+    'pl': 'pl'
+  };
+
+
+  return langMap[language] || 'en';
 
 
 }

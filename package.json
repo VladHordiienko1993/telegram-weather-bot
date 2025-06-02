@@ -8,15 +8,22 @@
     "dev": "node src/bot.js",
     "test": "jest"
   },
-  "keywords": ["telegram", "bot", "weather", "nodejs"],
+  "keywords": [
+    "telegram",
+    "bot",
+    "weather",
+    "nodejs"
+  ],
   "author": "Vlad",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.9.0",
     "dotenv": "^16.5.0",
+    "pg": "^8.16.0",
     "telegraf": "^4.16.3"
   },
   "devDependencies": {
+    "@types/pg": "^8.15.4",
     "jest": "^29.7.0",
     "nock": "^14.0.4"
   },
